@@ -11,7 +11,9 @@ project evaluations, and live DSA performance benchmarks.
 import os
 import sys
 import time
-from typing import List, Optional
+import csv
+from pathlib import Path
+from typing import List, Optional, Dict, Any
 import streamlit as st
 from PIL import Image
 
@@ -33,21 +35,24 @@ from services.benchmark import benchmark_sorting_algorithms
 from dsa.sorting import merge_sort, quick_sort, bubble_sort
 from dsa.searching import linear_search, binary_search, filter_records
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
-SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "sample_images")
-ORGANIZED_DIR = os.path.join(os.path.dirname(__file__), "Organized")
+BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_DIR = str(BASE_DIR / "uploads")
+SAMPLE_DIR = str(BASE_DIR / "sample_images")
+ORGANIZED_DIR = str(BASE_DIR / "Organized")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-LAND_TYPE_OPTIONS = ["Forest", "Water", "Agriculture", "Urban", "Barren_Land", "Other"]
-FILTER_LAND_OPTIONS = ["All", "Forest", "Water", "Agriculture", "Urban", "Barren_Land", "Other"]
+DEEPGLOBE_LAND_TYPES = ["Forest", "Water", "Agriculture", "Urban", "Barren"]
+LAND_TYPE_OPTIONS = ["Forest", "Water", "Agriculture", "Urban", "Barren", "Barren_Land", "Other"]
+FILTER_LAND_OPTIONS = ["All", "Forest", "Water", "Agriculture", "Urban", "Barren", "Barren_Land", "Other"]
 FILTER_FORMAT_OPTIONS = ["All", "JPG", "JPEG", "PNG", "TIFF", "WEBP"]
 
 SORT_FIELD_MAP = {
-    "Date & Time": "datetime",
-    "Image Format": "image_format",
-    "Land Type": "land_type",
     "Image Name": "image_name",
+    "Land Type": "land_type",
     "File Size": "file_size",
+    "Image Format": "image_format",
+    "Image ID": "image_id",
+    "Date & Time": "datetime",
 }
 
 SEARCH_FIELD_MAP = {
@@ -57,6 +62,95 @@ SEARCH_FIELD_MAP = {
     "Image Format": "image_format",
     "Date": "date",
 }
+
+
+def load_sample_images(target_land_type: Optional[str] = None) -> None:
+    """
+    Load real satellite imagery from sample_images/ directory and its class subfolders
+    (Forest, Water, Agriculture, Urban, Barren), referencing metadata.csv.
+    """
+    sample_path = Path(SAMPLE_DIR)
+    if not sample_path.exists():
+        st.warning("Sample images directory not found.")
+        return
+
+    # 1. Read metadata.csv if available
+    metadata_map: Dict[str, Dict[str, str]] = {}
+    metadata_file = sample_path / "metadata.csv"
+    if metadata_file.exists():
+        try:
+            with open(metadata_file, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    fname = row.get("original_filename", "").strip()
+                    if fname:
+                        metadata_map[fname] = row
+        except Exception as exc:
+            st.warning(f"Could not parse sample metadata.csv: {exc}")
+
+    # 2. Gather image files from class subdirectories and root
+    class_folders = ["Forest", "Water", "Agriculture", "Urban", "Barren"]
+    image_candidates = []
+
+    for folder_name in class_folders:
+        folder_dir = sample_path / folder_name
+        if folder_dir.is_dir():
+            if target_land_type and target_land_type not in ("All", "All Classes") and folder_name.lower() != target_land_type.lower():
+                continue
+            for img_file in sorted(folder_dir.iterdir()):
+                if img_file.is_file() and img_file.suffix.lower() in (".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"):
+                    image_candidates.append((img_file, folder_name))
+
+    # Fallback to root sample_images folder only if class subdirectories are empty
+    if not image_candidates:
+        for img_file in sorted(sample_path.iterdir()):
+            if img_file.is_file() and img_file.suffix.lower() in (".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"):
+                image_candidates.append((img_file, None))
+
+    loaded_count = 0
+    for file_p, default_land_type in image_candidates:
+        filename = file_p.name
+        if any(r.image_name == filename for r in st.session_state.records):
+            continue
+
+        meta = metadata_map.get(filename, {})
+        img_id = meta.get("image_id") or get_next_image_id()
+        land_type = meta.get("land_type") or default_land_type
+        if not land_type:
+            parsed = parse_filename(filename)
+            land_type = parsed.record.land_type or "Other"
+
+        record = ImageRecord(
+            image_id=str(img_id),
+            image_name=filename,
+            file_path=str(file_p.resolve()),
+            land_type=land_type,
+            dominant_percentage=meta.get("dominant_percentage"),
+            source=meta.get("source", "DeepGlobe Land Cover Challenge (DigitalGlobe)"),
+            date=None,
+            time=None,
+            datetime=None,
+        )
+
+        read_res = read_image(str(file_p.resolve()), record=record)
+        if read_res.success:
+            st.session_state.records.append(record)
+            loaded_count += 1
+
+    if loaded_count > 0:
+        st.session_state.sorted_records = None
+        st.session_state.sort_stats = None
+        st.session_state.search_results = None
+        st.session_state.search_stats = None
+        st.session_state.filter_results = None
+        st.session_state.filter_stats = None
+        st.session_state.benchmark_results = None
+        st.session_state.organization_summary = None
+        target_info = f" ({target_land_type})" if target_land_type and target_land_type not in ("All", "All Classes") else ""
+        st.success(f"✓ Successfully loaded {loaded_count} real satellite images{target_info} from DeepGlobe dataset!")
+        st.rerun()
+    else:
+        st.info("The selected satellite images are already loaded in the catalog.")
 
 SORT_ALGO_INFO = {
     "Merge Sort": {
@@ -178,58 +272,6 @@ def format_file_size(size_in_bytes: Optional[int]) -> str:
         return f"{size_in_bytes / (1024 * 1024):.2f} MB"
 
 
-def load_sample_images() -> None:
-    """Load sample satellite images from sample_images/ directory."""
-    if not os.path.exists(SAMPLE_DIR):
-        st.warning("Sample images directory not found.")
-        return
-
-    sample_files = [
-        f for f in os.listdir(SAMPLE_DIR)
-        if f.lower().endswith((".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"))
-    ]
-
-    loaded_count = 0
-    for filename in sample_files:
-        if any(r.image_name == filename for r in st.session_state.records):
-            continue
-
-        src_path = os.path.join(SAMPLE_DIR, filename)
-        dest_path = os.path.join(UPLOAD_DIR, filename)
-
-        try:
-            with open(src_path, "rb") as src, open(dest_path, "wb") as dst:
-                dst.write(src.read())
-
-            parse_res = parse_filename(filename)
-            record = parse_res.record
-            record.file_path = dest_path
-            record.image_id = get_next_image_id()
-
-            read_res = read_image(dest_path, record=record)
-            if read_res.success:
-                if not record.land_type:
-                    record.land_type = "Other"
-                st.session_state.records.append(record)
-                loaded_count += 1
-        except Exception as exc:
-            st.error(f"Error loading sample image '{filename}': {exc}")
-
-    if loaded_count > 0:
-        st.session_state.sorted_records = None
-        st.session_state.sort_stats = None
-        st.session_state.search_results = None
-        st.session_state.search_stats = None
-        st.session_state.filter_results = None
-        st.session_state.filter_stats = None
-        st.session_state.benchmark_results = None
-        st.session_state.organization_summary = None
-        st.success(f"✓ Successfully loaded {loaded_count} sample satellite images!")
-        st.rerun()
-    else:
-        st.info("All sample images are already loaded in the catalog.")
-
-
 def run_manual_sort(algorithm_name: str, sort_field_label: str, ascending: bool) -> None:
     """Execute manual DSA sorting without using any library or built-in sort."""
     if not st.session_state.records:
@@ -348,7 +390,7 @@ def render_image_gallery(records: List[ImageRecord], context_prefix: str = "main
 
     view_col1, view_col2 = st.columns([3, 1])
     with view_col1:
-        st.write(f"Displaying **{len(records)}** image(s)")
+        st.write(f"Displaying **{len(records)}** satellite image(s)")
     with view_col2:
         view_mode = st.radio(
             "Display Layout",
@@ -377,8 +419,7 @@ def render_image_gallery(records: List[ImageRecord], context_prefix: str = "main
 
                             if record.file_path and os.path.exists(record.file_path):
                                 try:
-                                    img = Image.open(record.file_path)
-                                    st.image(img, use_container_width=True)
+                                    st.image(record.file_path, use_container_width=True)
                                 except Exception as exc:
                                     st.warning(f"Could not render preview: {exc}")
                             else:
@@ -386,28 +427,28 @@ def render_image_gallery(records: List[ImageRecord], context_prefix: str = "main
 
                             st.markdown(f"**Filename:** `{record.image_name}`")
 
-                            date_display = record.date if record.date else "⚠️ _Missing_"
-                            time_display = record.time if record.time else "⚠️ _Missing_"
+                            date_display = record.date if record.date else "_Unavailable (DeepGlobe Benchmark)_"
+                            time_display = record.time if record.time else "_Unavailable (DeepGlobe Benchmark)_"
                             dims_display = f"{record.width} × {record.height} px" if record.width and record.height else "N/A"
                             size_display = format_file_size(record.file_size)
                             land_display = record.land_type or "Other"
                             land_slug = land_display.lower().replace(" ", "_")
 
+                            coverage_line = f"\n- **Dominant Purity:** `{record.dominant_percentage}`" if record.dominant_percentage else ""
+                            source_line = f"\n- **Source:** `{record.source}`" if record.source else ""
+
                             st.markdown(f"""
+                            - **Land Type:** <span class="badge-land-{land_slug}">{land_display}</span>{coverage_line}{source_line}
                             - **Date:** {date_display}
                             - **Time:** {time_display}
-                            - **Land Type:** <span class="badge-land-{land_slug}">{land_display}</span>
                             - **Dimensions:** {dims_display}
                             - **File Size:** {size_display}
                             """, unsafe_allow_html=True)
 
-                            needs_review = not record.date or not record.time or record.land_type == "Other"
-                            expander_label = "⚠️ Complete Metadata" if needs_review else "✏️ Edit Metadata"
-
-                            with st.expander(expander_label, expanded=False):
+                            with st.expander("✏️ View / Edit Details", expanded=False):
                                 with st.form(key=f"form_{context_prefix}_{record.image_id}_{item_idx}"):
-                                    new_date = st.text_input("Date (YYYY-MM-DD)", value=record.date or "2026-01-01")
-                                    new_time = st.text_input("Time (HH-MM)", value=record.time or "12-00")
+                                    new_date = st.text_input("Date (YYYY-MM-DD)", value=record.date or "")
+                                    new_time = st.text_input("Time (HH-MM)", value=record.time or "")
 
                                     current_land = record.land_type if record.land_type in LAND_TYPE_OPTIONS else "Other"
                                     land_idx = LAND_TYPE_OPTIONS.index(current_land) if current_land in LAND_TYPE_OPTIONS else 0
@@ -415,10 +456,12 @@ def render_image_gallery(records: List[ImageRecord], context_prefix: str = "main
 
                                     save_btn = st.form_submit_button("💾 Save Metadata", use_container_width=True)
                                     if save_btn:
-                                        record.date = new_date.strip()
-                                        record.time = new_time.strip()
+                                        record.date = new_date.strip() if new_date.strip() else None
+                                        record.time = new_time.strip() if new_time.strip() else None
                                         if record.date and record.time:
                                             record.datetime = f"{record.date} {record.time.replace('-', ':')}"
+                                        else:
+                                            record.datetime = None
                                         record.land_type = new_land
                                         st.success("Metadata updated successfully!")
                                         st.rerun()
@@ -429,10 +472,11 @@ def render_image_gallery(records: List[ImageRecord], context_prefix: str = "main
             table_data.append({
                 "Image ID": r.image_id,
                 "Image Name": r.image_name,
-                "Date": r.date or "N/A",
-                "Time": r.time or "N/A",
-                "Datetime": r.datetime or "N/A",
                 "Land Type": r.land_type or "Other",
+                "Dominance": r.dominant_percentage or "N/A",
+                "Source": r.source or "DeepGlobe",
+                "Date": r.date or "Unavailable",
+                "Time": r.time or "Unavailable",
                 "Format": (r.image_format or "").upper(),
                 "Dimensions": f"{r.width}x{r.height}" if r.width and r.height else "N/A",
                 "File Size": format_file_size(r.file_size),
@@ -493,6 +537,7 @@ def main():
         .badge-land-water { background-color: #0284C7; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
         .badge-land-agriculture { background-color: #D97706; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
         .badge-land-urban { background-color: #7C3AED; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
+        .badge-land-barren { background-color: #EA580C; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
         .badge-land-barren_land { background-color: #EA580C; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
         .badge-land-other { background-color: #64748B; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; }
         </style>
@@ -501,7 +546,7 @@ def main():
     # --- Sidebar Navigation & Controls ---
     with st.sidebar:
         st.title("🛰️ Satellite Sorter")
-        st.caption("DSA-Based Image Cataloging System")
+        st.caption("DeepGlobe Satellite Imagery Catalog")
         st.markdown("---")
 
         nav_page = st.radio(
@@ -525,9 +570,33 @@ def main():
         st.metric("Total Catalog Images", total_records)
 
         st.markdown("---")
-        st.subheader("🛠️ Quick Actions")
-        if st.button("📥 Load Sample Images", use_container_width=True):
-            load_sample_images()
+        st.subheader("📥 DeepGlobe Dataset")
+        sel_class_option = st.selectbox(
+            "Select Class to Load",
+            options=[
+                "All 5 Classes (100 Images)",
+                "Forest (20 Images)",
+                "Water (20 Images)",
+                "Agriculture (20 Images)",
+                "Urban (20 Images)",
+                "Barren (20 Images)",
+            ],
+            key="sb_dataset_class_select",
+        )
+
+        if st.button("📥 Load Dataset Images", use_container_width=True, type="primary"):
+            target_class = None
+            if "Forest" in sel_class_option:
+                target_class = "Forest"
+            elif "Water" in sel_class_option:
+                target_class = "Water"
+            elif "Agriculture" in sel_class_option:
+                target_class = "Agriculture"
+            elif "Urban" in sel_class_option:
+                target_class = "Urban"
+            elif "Barren" in sel_class_option:
+                target_class = "Barren"
+            load_sample_images(target_land_type=target_class)
 
         if total_records > 0:
             if st.button("🗑️ Clear Catalog", use_container_width=True):
@@ -548,7 +617,7 @@ def main():
     # --- Main Header Title ---
     st.markdown('<div class="main-header">🛰️ Satellite Image Sorter & Organizer</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-header">Organizes, searches, sorts, and analyzes satellite imagery using custom Data Structures & Algorithms (DSA).</div>',
+        '<div class="sub-header">Organizes, searches, sorts, and analyzes real satellite imagery using custom Data Structures & Algorithms (DSA).</div>',
         unsafe_allow_html=True,
     )
 
@@ -598,16 +667,41 @@ def main():
         with lc_cols[3]:
             st.metric("Urban", lc.get("Urban", 0))
         with lc_cols[4]:
-            st.metric("Barren Land", lc.get("Barren_Land", 0))
+            st.metric("Barren Land", lc.get("Barren_Land", 0) + lc.get("Barren", 0))
         with lc_cols[5]:
             st.metric("Other", lc.get("Other", 0))
 
         st.markdown("---")
-        st.markdown("### 🖼️ Catalog Preview")
+        st.markdown("### 🖼️ Catalog Preview & Land-Type Selector")
         if not records:
-            st.info("No images uploaded yet.")
-            st.caption("Click **📥 Load Sample Images** in the sidebar to populate the catalog with sample imagery.")
+            st.info("No satellite images loaded in catalog yet.")
+            st.caption("Click below to load the curated 100-image DeepGlobe satellite dataset (20 images per class):")
+            c_btn1, c_btn2 = st.columns([1.5, 2.5])
+            with c_btn1:
+                if st.button("📥 Load All 100 DeepGlobe Images", type="primary", use_container_width=True, key="dash_init_load_all"):
+                    load_sample_images()
         else:
+            land_categories = ["All Classes", "Forest", "Water", "Agriculture", "Urban", "Barren"]
+            
+            sel_land_col1, sel_land_col2 = st.columns([3, 1])
+            with sel_land_col1:
+                selected_land_view = st.radio(
+                    "Select Land Classification to Explore",
+                    options=land_categories,
+                    horizontal=True,
+                    key="dash_radio_land_selector",
+                )
+            with sel_land_col2:
+                if st.button("📥 Load More / Refresh", use_container_width=True, key="btn_dash_reload_samples"):
+                    load_sample_images()
+
+            display_records = records
+            if selected_land_view and selected_land_view != "All Classes":
+                if selected_land_view == "Barren":
+                    display_records = [r for r in records if (r.land_type or "").lower() in ("barren", "barren_land")]
+                else:
+                    display_records = [r for r in records if (r.land_type or "").lower() == selected_land_view.lower()]
+
             if st.session_state.sorted_records is not None:
                 st.caption(f"Showing sorted results via **{st.session_state.sort_stats['algorithm']}** ({st.session_state.sort_stats['order']})")
                 render_image_gallery(st.session_state.sorted_records, context_prefix="dash_sorted")
@@ -618,7 +712,9 @@ def main():
                 st.caption("Showing active filter matches")
                 render_image_gallery(st.session_state.filter_results, context_prefix="dash_filter")
             else:
-                render_image_gallery(records, context_prefix="dash_default")
+                if selected_land_view != "All Classes":
+                    st.caption(f"Showing **{len(display_records)}** satellite images for **{selected_land_view}**")
+                render_image_gallery(display_records, context_prefix="dash_default")
 
     # --------------------------------------------------------------------------
     # PAGE 2: 📤 Upload Images

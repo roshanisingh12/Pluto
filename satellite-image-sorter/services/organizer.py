@@ -87,7 +87,7 @@ def _normalize_category_folder(land_type: Optional[str]) -> str:
         return "Agriculture"
     elif norm == "urban":
         return "Urban"
-    elif norm in ("barren_land", "barrenland"):
+    elif norm in ("barren", "barren_land", "barrenland"):
         return "Barren_Land"
     else:
         return "Other"

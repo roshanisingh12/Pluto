@@ -29,6 +29,8 @@ def get_land_type_counts(records: List[ImageRecord]) -> Dict[str, int]:
 
     for record in records:
         raw_lt = (record.land_type or "Other").strip().replace(" ", "_")
+        if raw_lt.lower() == "barren":
+            raw_lt = "Barren_Land"
         matched = False
         for std_lt in STANDARD_LAND_TYPES:
             if raw_lt.lower() == std_lt.lower():

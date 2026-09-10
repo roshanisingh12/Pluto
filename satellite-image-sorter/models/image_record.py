@@ -42,6 +42,9 @@ class ImageRecord:
     width: Optional[int] = None         # pixels
     height: Optional[int] = None        # pixels
 
+    dominant_percentage: Optional[str] = None
+    source: Optional[str] = None
+
     # ------------------------------------------------------------------ #
     # Convenience helpers                                                  #
     # ------------------------------------------------------------------ #
@@ -84,6 +87,8 @@ class ImageRecord:
             "datetime": self.datetime,
             "image_format": self.image_format,
             "land_type": self.land_type,
+            "dominant_percentage": self.dominant_percentage,
+            "source": self.source,
             "file_size": self.file_size,
             "width": self.width,
             "height": self.height,
