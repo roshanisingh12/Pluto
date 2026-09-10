@@ -24,6 +24,7 @@ Note:
 - The original input list is never modified; a new sorted list is returned.
 """
 
+from datetime import datetime as _dt
 from typing import List, Tuple, Any, Callable, Union, Optional
 import sys
 import os
@@ -43,7 +44,7 @@ def get_record_key(record: ImageRecord, key: Union[str, Callable[[ImageRecord], 
     Extracts the comparable value from an ImageRecord based on the requested key.
 
     Supported string keys (case-insensitive and whitespace/underscore-agnostic):
-    - "date & time", "datetime", "date_time", "date", "time"
+    - "date & time", "datetime", "date_time", "date", "time" (parsed as real datetime)
     - "image_format", "format", "ext", "extension"
     - "land_type", "land type", "landtype"
     - "image_name", "image name", "name", "filename"
@@ -61,10 +62,21 @@ def get_record_key(record: ImageRecord, key: Union[str, Callable[[ImageRecord], 
 
     if normalized in ("datetime", "dateandtime", "date", "time"):
         if record.datetime:
-            return record.datetime
-        date_part = record.date or ""
-        time_part = record.time or ""
-        return f"{date_part} {time_part}".strip()
+            try:
+                clean_dt = record.datetime.strip().replace(":", "-")
+                parts = clean_dt.split()
+                if len(parts) == 2:
+                    return _dt.strptime(f"{parts[0]} {parts[1]}", "%Y-%m-%d %H-%M")
+            except Exception:
+                pass
+        if record.date:
+            try:
+                t_str = (record.time or "00-00").replace(":", "-")
+                return _dt.strptime(f"{record.date} {t_str}", "%Y-%m-%d %H-%M")
+            except Exception:
+                pass
+        return _dt.min
+
 
     elif normalized in ("imageformat", "format", "ext", "extension"):
         return (record.image_format or "").lower()

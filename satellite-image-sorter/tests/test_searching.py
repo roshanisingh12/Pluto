@@ -241,6 +241,32 @@ class TestSearchingAlgorithms(unittest.TestCase):
         with self.assertRaises(TypeError):
             get_search_key(self.record1, 999)
 
+    # ------------------------------------------------------------------
+    # 9. Multi-Criteria Filtering
+    # ------------------------------------------------------------------
+    def test_multi_criteria_filtering(self):
+        """Verify combined multi-criteria manual filtering."""
+        from dsa.searching import filter_records
+
+        # Filter by Land Type + Format + Date Range
+        # Forest + PNG + between 2026-02-01 and 2026-03-31 -> should only match id-004
+        results, comps = filter_records(
+            self.records,
+            land_type="Forest",
+            image_format="png",
+            start_date="2026-02-01",
+            end_date="2026-03-31",
+        )
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].image_id, "id-004")
+        self.assertGreater(comps, 0)
+
+        # Filter All matching
+        res_all, _ = filter_records(self.records, land_type="All", image_format="All")
+        self.assertEqual(len(res_all), len(self.records))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+

@@ -295,3 +295,86 @@ def binary_search(
 
     matches = sorted_records[left_bound : right_bound + 1]
     return matches, comparisons
+
+
+# ==============================================================================
+# 3. Multi-Criteria Filtering
+# ==============================================================================
+
+def filter_records(
+    records: List[ImageRecord],
+    land_type: Optional[str] = None,
+    image_format: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Tuple[List[ImageRecord], int]:
+    """
+    Manually filters ImageRecord collections by combining multiple criteria:
+    - land_type (e.g. "Forest", "Water", "Agriculture", "Urban", "Barren_Land", "Other" or "All")
+    - image_format (e.g. "JPG", "JPEG", "PNG", "TIFF", "WEBP" or "All")
+    - start_date ("YYYY-MM-DD" or None)
+    - end_date ("YYYY-MM-DD" or None)
+
+    All filters work together simultaneously using sequential comparison evaluation.
+
+    Time Complexity:
+    - O(n) linear scan across all records.
+
+    Space Complexity:
+    - O(k) for returning matching records.
+
+    Returns:
+    - Tuple of (filtered_records_list, total_comparisons_count)
+    """
+    comparisons = 0
+    filtered: List[ImageRecord] = []
+
+    norm_land = (
+        land_type.strip().lower().replace(" ", "_")
+        if land_type and land_type.strip().lower() != "all"
+        else None
+    )
+    norm_fmt = (
+        image_format.strip().lower()
+        if image_format and image_format.strip().lower() != "all"
+        else None
+    )
+    norm_start = start_date.strip() if start_date else None
+    norm_end = end_date.strip() if end_date else None
+
+    for record in records:
+        match = True
+
+        # Check Land Type
+        if norm_land is not None:
+            comparisons += 1
+            rec_land = (record.land_type or "").strip().lower().replace(" ", "_")
+            if rec_land != norm_land:
+                match = False
+
+        # Check Image Format
+        if match and norm_fmt is not None:
+            comparisons += 1
+            rec_fmt = (record.image_format or "").strip().lower()
+            if rec_fmt != norm_fmt:
+                match = False
+
+        # Check Start Date
+        if match and norm_start:
+            comparisons += 1
+            rec_date = (record.date or "").strip()
+            if not rec_date or rec_date < norm_start:
+                match = False
+
+        # Check End Date
+        if match and norm_end:
+            comparisons += 1
+            rec_date = (record.date or "").strip()
+            if not rec_date or rec_date > norm_end:
+                match = False
+
+        if match:
+            filtered.append(record)
+
+    return filtered, comparisons
+

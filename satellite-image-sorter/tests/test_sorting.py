@@ -277,7 +277,8 @@ class TestSortingAlgorithms(unittest.TestCase):
             file_size=5000,
             image_name="test.png",
         )
-        self.assertEqual(get_record_key(rec, "datetime"), "2026-01-01 10:00")
+        from datetime import datetime as _dt
+        self.assertEqual(get_record_key(rec, "datetime"), _dt(2026, 1, 1, 10, 0))
         self.assertEqual(get_record_key(rec, "format"), "png")
         self.assertEqual(get_record_key(rec, "land type"), "forest")
         self.assertEqual(get_record_key(rec, "file size"), 5000)
