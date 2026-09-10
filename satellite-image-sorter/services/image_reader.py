@@ -151,3 +151,68 @@ def enrich_record_from_file(record: ImageRecord) -> ImageReadResult:
     by reading the file at record.file_path.
     """
     return read_image(record.file_path, record=record)
+
+
+def process_uploaded_image(
+    uploaded_file,
+    upload_dir: str = "uploads",
+    image_id: Optional[str] = None,
+) -> Tuple[Optional[ImageRecord], Optional[str]]:
+    """
+    Validates, saves, and creates an ImageRecord from an uploaded file stream.
+
+    Parameters
+    ----------
+    uploaded_file : UploadedFile or file-like object
+        File uploaded by user (e.g. from st.file_uploader).
+    upload_dir : str, optional
+        Folder to persist uploaded image on disk (default "uploads").
+    image_id : str, optional
+        Sequential image ID such as "SAT001".
+
+    Returns
+    -------
+    (record: Optional[ImageRecord], error_message: Optional[str])
+    """
+    from services.metadata_parser import parse_filename
+
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = os.path.basename(getattr(uploaded_file, "name", "uploaded_image.png"))
+    file_path = os.path.join(upload_dir, filename)
+
+    # 1. Read bytes and save to disk
+    try:
+        if hasattr(uploaded_file, "getvalue"):
+            content = uploaded_file.getvalue()
+        elif hasattr(uploaded_file, "read"):
+            content = uploaded_file.read()
+        else:
+            content = bytes(uploaded_file)
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except Exception as exc:
+        return None, f"Failed to save uploaded file '{filename}': {exc}"
+
+    # 2. Parse filename metadata
+    parse_result = parse_filename(filename)
+    record = parse_result.record
+    record.file_path = file_path
+    if image_id:
+        record.image_id = image_id
+
+    # 3. Read image dimensions, format, file_size using Pillow
+    read_res = read_image(file_path, record=record)
+    if not read_res.success:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+        return None, read_res.error
+
+    if not record.land_type:
+        record.land_type = "Other"
+
+    return record, None
+
