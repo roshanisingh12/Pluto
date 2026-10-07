@@ -212,6 +212,13 @@ def run_live_tests():
     assert rev_names == sorted(rev_names, reverse=True)
     print("✓ Manual DSA sorting correctness verified on descending direction")
 
+    # Cleanup uploaded test image file
+    if uploaded_record and uploaded_record.get("file_path") and os.path.exists(uploaded_record["file_path"]):
+        try:
+            os.remove(uploaded_record["file_path"])
+        except OSError:
+            pass
+
     print("\n=======================================================")
     print(" ALL 14 LIVE ENDPOINT TESTS PASSED WITH 100% SUCCESS! ")
     print("=======================================================")

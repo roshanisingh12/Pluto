@@ -20,7 +20,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ORGANIZED_DIR.mkdir(parents=True, exist_ok=True)
 
 # Server host and port
-HOST = os.getenv("HOST", "127.0.0.1")
+HOST = os.getenv("HOST", "0.0.0.0" if os.getenv("RENDER") else "127.0.0.1")
 PORT = int(os.getenv("PORT", "8000"))
 
 # CORS Configuration

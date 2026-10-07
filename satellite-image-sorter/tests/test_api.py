@@ -209,6 +209,11 @@ class TestSatelliteAPI(unittest.TestCase):
         # Check it is in catalog and hash table
         found = catalog_service.get_by_id(uploaded_record["image_id"])
         self.assertIsNotNone(found)
+        if found and found.file_path and os.path.exists(found.file_path):
+            try:
+                os.remove(found.file_path)
+            except OSError:
+                pass
 
     def test_upload_corrupt_file_rejected(self):
         # Corrupt non-image payload
