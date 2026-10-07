@@ -23,7 +23,7 @@ from services.metadata_parser import parse_filename
 
 
 class FakeUploadedFile:
-    """Mock Streamlit UploadedFile object."""
+    """Mock UploadedFile object for file upload testing."""
 
     def __init__(self, name: str, data: bytes):
         self.name = name

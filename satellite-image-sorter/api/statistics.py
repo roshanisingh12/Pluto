@@ -35,4 +35,5 @@ def get_statistics():
         format_counts=summary["format_counts"],
         timeline_counts=summary["timeline_counts"],
         storage_stats=summary["storage_stats"],
+        dimension_stats=summary.get("dimension_stats"),
     )

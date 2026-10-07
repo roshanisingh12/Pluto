@@ -96,6 +96,21 @@ class TestSatelliteAPI(unittest.TestCase):
         paged_data = response_paged.json()
         self.assertEqual(len(paged_data["items"]), min(5, total_items))
 
+        # Test page and page_size
+        response_page_size = self.client.get("/api/images?page=1&page_size=3")
+        self.assertEqual(response_page_size.status_code, 200)
+        page_data = response_page_size.json()
+        self.assertEqual(len(page_data["items"]), min(3, total_items))
+        self.assertEqual(page_data["total"], total_items)
+
+        # Test search query
+        first_img = catalog_service.get_all()[0]
+        search_res = self.client.get(f"/api/images?search={first_img.image_id}")
+        self.assertEqual(search_res.status_code, 200)
+        search_data = search_res.json()
+        self.assertGreaterEqual(search_data["total"], 1)
+        self.assertTrue(any(item["image_id"] == first_img.image_id for item in search_data["items"]))
+
     def test_images_filter_by_land_type_and_format(self):
         catalog_service.load_samples()
         response = self.client.get("/api/images?land_type=Water")

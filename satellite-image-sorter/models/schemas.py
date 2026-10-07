@@ -219,6 +219,7 @@ class StatisticsResponse(BaseModel):
     format_counts: Dict[str, int] = Field(..., description="Distribution across image formats")
     timeline_counts: Dict[str, int] = Field(..., description="Acquisition frequency chronologically by date")
     storage_stats: Dict[str, Any] = Field(..., description="File storage metrics (total, avg, min, max bytes)")
+    dimension_stats: Optional[Dict[str, Any]] = Field(None, description="Image dimension statistics (resolutions, min, max)")
 
 
 class OrganizeRequest(BaseModel):

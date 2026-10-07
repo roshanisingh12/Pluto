@@ -30,7 +30,7 @@ from dsa.hashing import ImageHashTable
 
 
 class MockUpload:
-    """Mock file stream for Streamlit upload testing."""
+    """Mock file stream for upload testing."""
     def __init__(self, name: str, data: bytes):
         self.name = name
         self.data = data

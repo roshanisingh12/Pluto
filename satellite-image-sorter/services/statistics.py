@@ -113,6 +113,43 @@ def get_storage_stats(records: List[ImageRecord]) -> Dict[str, Any]:
     }
 
 
+def get_dimension_stats(records: List[ImageRecord]) -> Dict[str, Any]:
+    """
+    Computes image dimension statistics (width and height distributions).
+    """
+    dims = [(r.width, r.height) for r in records if r.width is not None and r.height is not None]
+    if not dims:
+        return {
+            "has_dimensions": False,
+            "common_resolution": "N/A",
+            "count_with_dimensions": 0,
+            "min_width": 0,
+            "max_width": 0,
+            "min_height": 0,
+            "max_height": 0,
+            "resolution_counts": {},
+        }
+
+    widths = [w for w, h in dims]
+    heights = [h for w, h in dims]
+    res_counts: Dict[str, int] = {}
+    for w, h in dims:
+        res_str = f"{w} × {h}"
+        res_counts[res_str] = res_counts.get(res_str, 0) + 1
+    most_common = max(res_counts.items(), key=lambda x: x[1])[0]
+
+    return {
+        "has_dimensions": True,
+        "common_resolution": most_common,
+        "count_with_dimensions": len(dims),
+        "min_width": min(widths),
+        "max_width": max(widths),
+        "min_height": min(heights),
+        "max_height": max(heights),
+        "resolution_counts": res_counts,
+    }
+
+
 def get_overall_summary(records: List[ImageRecord]) -> Dict[str, Any]:
     """
     Generates a comprehensive summary dictionary of catalog metrics.
@@ -122,6 +159,7 @@ def get_overall_summary(records: List[ImageRecord]) -> Dict[str, Any]:
     format_counts = get_format_counts(records)
     timeline_counts = get_timeline_counts(records)
     storage_stats = get_storage_stats(records)
+    dimension_stats = get_dimension_stats(records)
 
     complete_count = sum(1 for r in records if r.is_complete())
 
@@ -133,4 +171,6 @@ def get_overall_summary(records: List[ImageRecord]) -> Dict[str, Any]:
         "format_counts": format_counts,
         "timeline_counts": timeline_counts,
         "storage_stats": storage_stats,
+        "dimension_stats": dimension_stats,
     }
+
