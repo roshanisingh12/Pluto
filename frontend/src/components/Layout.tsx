@@ -36,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </main>
 
         <footer className="h-10 border-t border-slate-800/80 bg-[#0D1117]/60 px-6 flex items-center justify-between text-[11px] font-mono text-slate-500">
-          <div>SATIQ MISSION CONTROL &bull; EARTH OBSERVATION PLATFORM</div>
+          <div>PLUTO MISSION CONTROL &bull; EARTH OBSERVATION PLATFORM</div>
           <div className="hidden sm:block">PHASE 2 &bull; CORE MISSION CONTROL UI</div>
         </footer>
       </div>

@@ -47,7 +47,7 @@ export const UploadPage: React.FC = () => {
       {/* Upload Pipeline Indicator */}
       <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800 text-xs">
         <div className="text-slate-400 font-semibold mb-2 uppercase tracking-wider text-[11px]">
-          SATIQ Upload Pipeline Flow
+          Pluto Upload Pipeline Flow
         </div>
         <div className="flex flex-wrap items-center gap-2 text-slate-300 font-mono">
           <span className="px-2.5 py-1 rounded bg-slate-800 border border-slate-700">1. UPLOAD</span>

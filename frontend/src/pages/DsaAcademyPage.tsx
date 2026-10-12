@@ -126,7 +126,7 @@ const AlgoCard: React.FC<{
           {/* Project Application */}
           {projectApplication && (
             <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-4">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW SATIQ USES THIS</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW PLUTO USES THIS</div>
               <p className="text-xs font-mono text-slate-300 leading-relaxed">{projectApplication}</p>
             </div>
           )}
@@ -196,7 +196,7 @@ export const DsaAcademyPage: React.FC = () => {
           <span className="text-xs font-mono font-semibold text-[#06B6D4] uppercase tracking-wider">TECHNICAL MISSION KNOWLEDGE CENTER</span>
         </div>
         <h1 className="text-2xl font-bold font-mono tracking-tight text-white mt-1">DSA Academy</h1>
-        <p className="text-xs text-slate-400 font-mono mt-0.5">Algorithms, data structures, and viva examination reference for the SATIQ DSA implementation.</p>
+        <p className="text-xs text-slate-400 font-mono mt-0.5">Algorithms, data structures, and viva examination reference for the Pluto DSA implementation.</p>
       </div>
 
       {loading && (
@@ -236,7 +236,7 @@ export const DsaAcademyPage: React.FC = () => {
             <div className="space-y-4">
               <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
                 <Cpu className="w-3.5 h-3.5 text-[#06B6D4]" />
-                SATIQ implements three manual sorting algorithms. Click an algorithm to expand.
+                Pluto implements three manual sorting algorithms. Click an algorithm to expand.
               </div>
               <AlgoCard id="merge_sort"  name="Merge Sort"  info={getAlgoData(info.sorting, 'Merge Sort', 'merge_sort')}  defaultOpen />
               <AlgoCard id="quick_sort"  name="Quick Sort"  info={getAlgoData(info.sorting, 'Quick Sort', 'quick_sort')}  />
@@ -249,7 +249,7 @@ export const DsaAcademyPage: React.FC = () => {
             <div className="space-y-4">
               <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
                 <Search className="w-3.5 h-3.5 text-[#06B6D4]" />
-                SATIQ implements two manual searching algorithms. Click to expand.
+                Pluto implements two manual searching algorithms. Click to expand.
               </div>
               <AlgoCard id="linear_search" name="Linear Search" info={getAlgoData(info.searching, 'Linear Search', 'linear_search')} defaultOpen />
               <AlgoCard id="binary_search" name="Binary Search" info={getAlgoData(info.searching, 'Binary Search', 'binary_search')} />
@@ -289,7 +289,7 @@ export const DsaAcademyPage: React.FC = () => {
                   <code className="text-xs font-mono text-cyan-300">{info.hashing.hash_function}</code>
                 </div>
                 <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-4">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW SATIQ USES THIS</div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW PLUTO USES THIS</div>
                   <p className="text-xs font-mono text-slate-300 leading-relaxed">{info.hashing.project_application}</p>
                 </div>
               </div>
@@ -308,7 +308,7 @@ export const DsaAcademyPage: React.FC = () => {
                   <Badge label="Space" value="O(n)" color="#8B5CF6" />
                 </div>
                 <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-4">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW SATIQ USES THIS</div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW PLUTO USES THIS</div>
                   <p className="text-xs font-mono text-slate-300 leading-relaxed">
                     The image catalog is maintained as a dynamic Python list (dynamic array) of ImageRecord objects. All sorting and searching algorithms iterate over this list. The list auto-resizes on insertion, enabling O(1) amortized appends when new images are uploaded or sample datasets are loaded.
                   </p>
@@ -336,7 +336,7 @@ export const DsaAcademyPage: React.FC = () => {
                   ))}
                 </div>
                 <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-4">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW SATIQ USES THIS</div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW PLUTO USES THIS</div>
                   <p className="text-xs font-mono text-slate-300 leading-relaxed">{info.filtering.purpose}</p>
                 </div>
               </div>

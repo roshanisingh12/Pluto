@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({ health, healthLoading, onRefresh
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-lg tracking-wider text-slate-100">SATIQ</span>
+              <span className="font-bold text-lg tracking-wider text-slate-100">PLUTO</span>
               <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
                 PHASE 1
               </span>

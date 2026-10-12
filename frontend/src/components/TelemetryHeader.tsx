@@ -32,7 +32,7 @@ export const TelemetryHeader: React.FC<TelemetryHeaderProps> = ({
 
   return (
     <header className="h-14 border-b border-slate-800 bg-[#0D1117]/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between">
-      {/* Left: Mobile Toggle & SATIQ wordmark */}
+      {/* Left: Mobile Toggle & Pluto wordmark */}
       <div className="flex items-center gap-3">
         {onToggleSidebar && (
           <button
@@ -51,7 +51,7 @@ export const TelemetryHeader: React.FC<TelemetryHeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono font-bold text-sm tracking-widest text-slate-100">
-                SATIQ
+                PLUTO
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-cyan-400 border border-slate-700">
                 v1.0

@@ -333,7 +333,7 @@ export const IngestPage: React.FC = () => {
             <span>Filename Convention Standards</span>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed font-mono">
-            SATIQ automatically extracts date, timestamp, and land classification metadata when filenames adhere to the standardized format:
+            Pluto automatically extracts date, timestamp, and land classification metadata when filenames adhere to the standardized format:
           </p>
           <div className="p-3 rounded-xl bg-[#0A0E1A] border border-slate-800 font-mono text-xs text-[#22D3EE] select-all">
             YYYY-MM-DD_HH-MM_LandType.ext

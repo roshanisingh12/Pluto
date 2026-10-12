@@ -153,7 +153,7 @@ export const BenchmarkPage: React.FC = () => {
           </div>
           <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-500 flex items-center gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            All three algorithms (Merge Sort, Quick Sort, Bubble Sort) run simultaneously on identical dataset copies using SATIQ's pure Python DSA implementations.
+            All three algorithms (Merge Sort, Quick Sort, Bubble Sort) run simultaneously on identical dataset copies using Pluto's pure Python DSA implementations.
           </div>
         </div>
 

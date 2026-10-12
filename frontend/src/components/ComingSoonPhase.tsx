@@ -27,7 +27,7 @@ export const ComingSoonPhase: React.FC<ComingSoonPhaseProps> = ({
               SCHEDULED FOR {phase.toUpperCase()}
             </span>
           </div>
-          <span className="text-xs font-mono text-slate-500">SATIQ SPECIFICATION</span>
+          <span className="text-xs font-mono text-slate-500">PLUTO SPECIFICATION</span>
         </div>
 
         <div>
