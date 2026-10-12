@@ -24,21 +24,60 @@ const Badge: React.FC<{ label: string; value: string; color: string }> = ({ labe
   </div>
 );
 
+/* -- Helper to retrieve algorithm data safely supporting Title Case & snake_case -- */
+const getAlgoData = (section: any, titleCaseKey: string, snakeCaseKey: string) => {
+  if (!section) return undefined;
+  const raw = section[titleCaseKey] ?? section[snakeCaseKey];
+  if (!raw) return undefined;
+
+  const tc = raw.time_complexity;
+  const best = raw.best_time ?? (typeof tc === 'object' ? tc?.best : undefined) ?? '—';
+  const avg = raw.avg_time ?? (typeof tc === 'object' ? tc?.average : undefined) ?? '—';
+  const worst = raw.worst_time ?? (typeof tc === 'object' ? tc?.worst : undefined) ?? '—';
+
+  return {
+    ...raw,
+    time_complexity: {
+      best,
+      average: avg,
+      worst,
+    },
+    best_time: best,
+    avg_time: avg,
+    worst_time: worst,
+    description: raw.description ?? raw.purpose ?? '',
+    paradigm: raw.paradigm ?? raw.category ?? '',
+    stability: raw.stability ?? (raw.stable === true ? 'Stable' : raw.stable === false ? 'Unstable' : undefined),
+    space_complexity: raw.space_complexity ?? '—',
+    project_application: raw.project_application ?? '',
+  };
+};
+
 /* -- Collapsible Card -- */
 const AlgoCard: React.FC<{
   id: string;
   name: string;
-  info: any;
+  info?: any;
   defaultOpen?: boolean;
 }> = ({ id, name, info, defaultOpen }) => {
   const [open, setOpen] = useState(defaultOpen ?? false);
   const colour = ALGO_COLOURS[id] ?? { accent: '#06B6D4', border: 'border-slate-800', bg: 'bg-[#0D1117]' };
 
-  const tc = info.time_complexity as any;
-  const best = tc?.best ?? '—';
-  const avg = tc?.average ?? '—';
-  const worst = tc?.worst ?? '—';
-  const stability = info.stability ?? (info.stable === true ? 'Stable' : info.stable === false ? 'Unstable' : '—');
+  const tc = info?.time_complexity as any;
+  const best = info?.best_time ?? tc?.best ?? '—';
+  const avg = info?.avg_time ?? tc?.average ?? '—';
+  const worst = info?.worst_time ?? tc?.worst ?? '—';
+  const space = info?.space_complexity ?? '—';
+
+  const rawStability = info?.stability ?? (info?.stable === true ? 'Stable' : info?.stable === false ? 'Unstable' : undefined);
+  const isStable = typeof rawStability === 'string' ? rawStability.toLowerCase().startsWith('stable') : rawStability === 'Stable';
+  const isUnstable = typeof rawStability === 'string' ? rawStability.toLowerCase().startsWith('unstable') : rawStability === 'Unstable';
+  const headerStability = isStable ? 'Stable' : isUnstable ? 'Unstable' : (rawStability ?? '—');
+  const fullStability = rawStability ?? '—';
+
+  const paradigm = info?.paradigm ?? info?.category;
+  const description = info?.description ?? info?.purpose;
+  const projectApplication = info?.project_application;
 
   return (
     <div className={`border ${colour.border} rounded-2xl overflow-hidden transition-all`}>
@@ -49,8 +88,8 @@ const AlgoCard: React.FC<{
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colour.accent }} />
         <span className="font-mono font-bold text-sm text-slate-100 flex-1">{name}</span>
         <div className="flex items-center gap-3 font-mono text-[11px] text-slate-500">
-          <span>{tc?.average ?? '—'}</span>
-          <span className={stability === 'Stable' ? 'text-emerald-400' : stability === 'Unstable' ? 'text-amber-400' : 'text-slate-500'}>{stability}</span>
+          <span>{avg}</span>
+          <span className={isStable ? 'text-emerald-400' : isUnstable ? 'text-amber-400' : 'text-slate-500'}>{headerStability}</span>
         </div>
         {open ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
       </button>
@@ -62,33 +101,35 @@ const AlgoCard: React.FC<{
             <Badge label="Best Case" value={best} color="#10B981" />
             <Badge label="Average Case" value={avg} color={colour.accent} />
             <Badge label="Worst Case" value={worst} color="#F59E0B" />
-            <Badge label="Space" value={info.space_complexity ?? '—'} color="#8B5CF6" />
+            <Badge label="Space" value={space} color="#8B5CF6" />
           </div>
 
           {/* Stability + Paradigm */}
           <div className="flex flex-wrap gap-2 font-mono text-xs">
-            {stability !== '—' && (
-              <span className={`px-3 py-1 rounded-full text-[11px] font-semibold border ${stability === 'Stable' ? 'bg-emerald-950/50 text-emerald-400 border-emerald-800/50' : 'bg-amber-950/50 text-amber-400 border-amber-800/50'}`}>
-                {stability}
+            {fullStability !== '—' && (
+              <span className={`px-3 py-1 rounded-full text-[11px] font-semibold border ${isStable ? 'bg-emerald-950/50 text-emerald-400 border-emerald-800/50' : isUnstable ? 'bg-amber-950/50 text-amber-400 border-amber-800/50' : 'bg-slate-800/50 text-slate-300 border-slate-700'}`}>
+                {fullStability}
               </span>
             )}
-            {info.paradigm && (
+            {paradigm && (
               <span className="px-3 py-1 rounded-full text-[11px] font-semibold border border-slate-700 bg-slate-800/50 text-slate-300">
-                {info.paradigm}
+                {paradigm}
               </span>
             )}
           </div>
 
           {/* Description */}
-          {info.description && (
-            <p className="text-xs font-mono text-slate-400 leading-relaxed">{info.description}</p>
+          {description && (
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">{description}</p>
           )}
 
           {/* Project Application */}
-          <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-4">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW SATIQ USES THIS</div>
-            <p className="text-xs font-mono text-slate-300 leading-relaxed">{info.project_application}</p>
-          </div>
+          {projectApplication && (
+            <div className="bg-[#0A0E1A] border border-slate-800 rounded-xl p-4">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1.5">HOW SATIQ USES THIS</div>
+              <p className="text-xs font-mono text-slate-300 leading-relaxed">{projectApplication}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -197,9 +238,9 @@ export const DsaAcademyPage: React.FC = () => {
                 <Cpu className="w-3.5 h-3.5 text-[#06B6D4]" />
                 SATIQ implements three manual sorting algorithms. Click an algorithm to expand.
               </div>
-              <AlgoCard id="merge_sort"  name="Merge Sort"  info={info.sorting.merge_sort}  defaultOpen />
-              <AlgoCard id="quick_sort"  name="Quick Sort"  info={info.sorting.quick_sort}  />
-              <AlgoCard id="bubble_sort" name="Bubble Sort" info={info.sorting.bubble_sort} />
+              <AlgoCard id="merge_sort"  name="Merge Sort"  info={getAlgoData(info.sorting, 'Merge Sort', 'merge_sort')}  defaultOpen />
+              <AlgoCard id="quick_sort"  name="Quick Sort"  info={getAlgoData(info.sorting, 'Quick Sort', 'quick_sort')}  />
+              <AlgoCard id="bubble_sort" name="Bubble Sort" info={getAlgoData(info.sorting, 'Bubble Sort', 'bubble_sort')} />
             </div>
           )}
 
@@ -210,8 +251,8 @@ export const DsaAcademyPage: React.FC = () => {
                 <Search className="w-3.5 h-3.5 text-[#06B6D4]" />
                 SATIQ implements two manual searching algorithms. Click to expand.
               </div>
-              <AlgoCard id="linear_search" name="Linear Search" info={info.searching.linear_search} defaultOpen />
-              <AlgoCard id="binary_search" name="Binary Search" info={info.searching.binary_search} />
+              <AlgoCard id="linear_search" name="Linear Search" info={getAlgoData(info.searching, 'Linear Search', 'linear_search')} defaultOpen />
+              <AlgoCard id="binary_search" name="Binary Search" info={getAlgoData(info.searching, 'Binary Search', 'binary_search')} />
             </div>
           )}
 
@@ -307,10 +348,10 @@ export const DsaAcademyPage: React.FC = () => {
             <div className="space-y-4">
               <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                {info.viva_questions.length} viva examination questions. Click to reveal answers.
+                {info.viva_questions?.length ?? 0} viva examination questions. Click to reveal answers.
               </div>
               <div className="space-y-2">
-                {info.viva_questions.map((vq, i) => (
+                {info.viva_questions?.map((vq, i) => (
                   <VivaItem key={i} q={vq.q} a={vq.a} idx={i + 1} />
                 ))}
               </div>
